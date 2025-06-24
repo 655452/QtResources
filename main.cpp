@@ -1,18 +1,31 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
+#include "treemodel.h"
+#include <QQmlContext>
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
+    const QUrl url(QStringLiteral("qrc:/ComboBox/main.qml"));
+
+    TreeModel treeModel;
+    // engine.rootContext()->setContextProperty("TreeModel", &treeModel);
+
+    // ✅ Register TreeModel as a QML type
+    qmlRegisterType<TreeModel>("MyApp.Models", 1, 0, "TreeModel");
+
     QObject::connect(
         &engine,
-        &QQmlApplicationEngine::objectCreationFailed,
+        &QQmlApplicationEngine::objectCreated,
         &app,
-        []() { QCoreApplication::exit(-1); },
+        [url](QObject *obj, const QUrl &objUrl) {
+            if (!obj && url == objUrl)
+                QCoreApplication::exit(-1);
+        },
         Qt::QueuedConnection);
-    engine.loadFromModule("untitled", "Main");
+    engine.load(url);
 
     return app.exec();
 }

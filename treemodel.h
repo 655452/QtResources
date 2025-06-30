@@ -25,14 +25,17 @@ public:
 
     // Q_INVOKABLE void resetWithClassification(const QString &classification);
     // Q_INVOKABLE void resetWithClassification(const QString &classification, const QString &treeCategory);
-    Q_INVOKABLE void resetWithFilter(const QString &classification, const QString &treeCategory, const QString &category);
+    Q_INVOKABLE int resetWithFilter(const QString &classification, const QString &treeCategory, const QString &category,const bool &nominatedItem);
 
+    QString  resolveColor(const QVariantMap &item) const;
     // QList<QVariant> m_allItems;
     QVector<QVariantMap> allItems;  // Add this in TreeModel class private section
 
     Q_INVOKABLE void setAllItems(const QVariantList &items); // Add this too
+    Q_INVOKABLE int getVisibleItemCount() const;
 
     QHash<int, QByteArray> roleNames() const override;
+
 private:
     TreeItem *rootItem;
 };

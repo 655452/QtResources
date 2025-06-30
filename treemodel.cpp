@@ -31,104 +31,57 @@ void TreeModel::clearAll() {
     if (rootItem) {
         rootItem->clearChildren(); // You must implement this in TreeItem
     }
-
     endResetModel();
 }
-// void TreeModel::resetWithClassification(const QString &classification) {
-//     beginResetModel();
 
-//     rootItem->clearChildren();  // Use your efficient child-clearing method
-//     qDebug()<<m_allItems;
-//     // Filter and add only matching items (you’ll pass full centralData.Items from QML)
-//     for (const QVariant &itemVar : m_allItems) {
-//         QVariantMap itemMap = itemVar.toMap();
-//         if (itemMap.value("classification").toString() == classification) {
-//             addRecursive(itemMap, rootItem);
-//         }
-//     }
-
-
-//     endResetModel();
-// }
-// void TreeModel::setAllItems(const QVariantList &items) {
-//     m_allItems = items;
-// }
-// void TreeModel::resetWithClassification(const QString &classification, const QString &treeCategory) {
-//     beginResetModel();
-//     rootItem->clearChildren();
-
-//     for (const QVariantMap &item : std::as_const(allItems)) {
-//         if (item.value("classification").toString() == classification &&
-//             item.value("treeCategory").toString() == treeCategory) {
-//             addRecursive(item, rootItem);
-//         }
-//     }
-
-//     endResetModel();
-// }
-
-void TreeModel::resetWithFilter(const QString &classification,
+int TreeModel::resetWithFilter(const QString &classification,
                                 const QString &treeCategory,
-                                const QString &category)
+                                const QString &category,
+                               const bool &nominatedItem)
 {
     beginResetModel();
     rootItem->clearChildren();
-
+    int count=0;
     for (const QVariantMap &item : std::as_const(allItems)) {
         if (item.value("classification").toString() == classification &&
             item.value("treeCategory").toString() == treeCategory &&
             item.value("category").toString() == category) {
-            addRecursive(item, rootItem);
+
+            if(nominatedItem){
+                // addRecursive(item, rootItem);
+                // count++;
+                if(item.value("nominate").toBool()){
+
+                    addRecursive(item, rootItem);
+                    count++;
+                }
+                continue;
+            }
+            else{
+
+                addRecursive(item, rootItem);
+                count++;
+            }
         }
     }
+ qDebug()<<" root count resetWithFilter ---------------"<<count;
 
     endResetModel();
+
+ return count;
 }
 
-
 void TreeModel::setAllItems(const QVariantList &items) {
+    beginResetModel();
     allItems.clear();
     for (const QVariant &item : items) {
         allItems.append(item.toMap());
     }
+    // qDebug()<<" root count ---------------"<< rootItem->childCount() ;
+
+    endResetModel();
 }
 
-// Recursive helper function
-// void TreeModel::addRecursive(const QVariantMap &node, TreeItem *parentItem) {
-//     QString name = node.value("name").toString();
-//     TreeItem *newItem = new TreeItem(name, parentItem);
-//     parentItem->appendChild(newItem);
-
-//     if (node.contains("children")) {
-//         QVariantList children = node.value("children").toList();
-//         for (const QVariant &child : children) {
-//             addRecursive(child.toMap(), newItem);
-//         }
-//     }
-// }
-
-// QVariant TreeModel::data(const QModelIndex &index, int role) const {
-//     if (!index.isValid() || role != Qt::DisplayRole)
-//         return QVariant();
-
-//     TreeItem *item = static_cast<TreeItem *>(index.internalPointer());
-//     return item->data(index.column());
-// }
-// QVariant TreeModel::data(const QModelIndex &index, int role) const {
-//     if (!index.isValid())
-//         return QVariant();
-
-//     TreeItem *item = static_cast<TreeItem *>(index.internalPointer());
-
-//     switch (role) {
-//     case NameRole:
-//         return item->name();
-//     case ColorRole:
-//         return item->color();
-//     default:
-//         return QVariant();
-//     }
-// }
 QVariant TreeModel::data(const QModelIndex &index, int role) const {
     if (!index.isValid())
         return QVariant();
@@ -153,36 +106,32 @@ QHash<int, QByteArray> TreeModel::roleNames() const {
     roles[ParametersRole] = "parameters";  // ← new
     return roles;
 }
+QString TreeModel::resolveColor(const QVariantMap &item) const {
+    bool nominate = item.value("nominate").toBool();
+    bool promote = item.value("promote").toBool();
+    bool adopt   = item.value("adopt").toBool();
 
+    QString ItemColor="gray";
+    // Set priority-based color logic here
+    if ((nominate && promote && adopt) || (adopt && !promote && !nominate))
+        ItemColor="pink";
+    else if (nominate)
+        ItemColor="yellow";
+    else if (nominate&&promote || promote)
+        ItemColor="green";
 
-// QHash<int, QByteArray> TreeModel::roleNames() const {
-//     QHash<int, QByteArray> roles;
-//     roles[NameRole] = "name";
-//     roles[ColorRole] = "color";
-//     return roles;
-// }
-// void TreeModel::addRecursive(const QVariantMap &node, TreeItem *parentItem) {
-//     QString name = node.value("name").toString();
-//     QString color = node.value("color").toString(); // default color
-//     TreeItem *newItem = new TreeItem(name,  parentItem,color);
-//     parentItem->appendChild(newItem);
+    return ItemColor;
+}
 
-//     if (node.contains("children")) {
-//         const QVariantList children = node.value("children").toList();
-//         for (const QVariant &child : children) {
-//             addRecursive(child.toMap(), newItem);
-//         }
-//     }
-// }
 void TreeModel::addRecursive(const QVariantMap &node, TreeItem *parentItem) {
     QString name = node.value("name").toString();
-    QString color = node.value("color").toString();
+    // QString color = node.value("color").toString();
+     QString color = resolveColor(node);
     TreeItem *newItem = new TreeItem(name, parentItem, color);
 
     if (node.contains("parameters")) {
         newItem->setParameters(node.value("parameters").toList());  // ← set parameters
     }
-
     parentItem->appendChild(newItem);
 
     if (node.contains("children")) {
@@ -192,7 +141,6 @@ void TreeModel::addRecursive(const QVariantMap &node, TreeItem *parentItem) {
         }
     }
 }
-
 
 QModelIndex TreeModel::index(int row, int column, const QModelIndex &parent) const {
     if (!hasIndex(row, column, parent))
@@ -223,4 +171,9 @@ int TreeModel::rowCount(const QModelIndex &parent) const {
 
 int TreeModel::columnCount(const QModelIndex &parent) const {
     return 1;
+}
+
+int  TreeModel::getVisibleItemCount() const {
+    // qDebug()<<" root count ---------------"<< rootItem->childCount() ;
+    return rootItem ? rootItem->childCount() : 0;
 }

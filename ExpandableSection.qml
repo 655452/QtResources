@@ -15,7 +15,10 @@ Item {
     property int baseHeight: 40
     property int visibleTreeRows: 0
     property var treeModel:[]
-
+    property int noOfItems:0
+// Component.onCompleted:{
+//     noOfItems=treeModel.getVisibleItemCount()
+// }
     width: parent.width
     implicitHeight: baseHeight + (expanded ?treeView.contentHeight: 0)
     Column {
@@ -33,6 +36,11 @@ Item {
             Text {
                 anchors.centerIn: parent
                 text: title
+            }
+            Text{
+                // text:parseFloat(noOfItems)
+                text:noOfItems
+                anchors.left:parent.left
             }
 
             MouseArea {
@@ -175,13 +183,9 @@ Item {
                             // horizontalAlignment: Text.AlignLeft
                             anchors.horizontalCenter: parent.horizontalCenter
 
-                            Component.onCompleted: {
-                                console.info(" model Display"+model)
-
-                            }
                         }
                         Row{
-                            id:parameters
+                            // id:parameters
                             width:parent.width
                             anchors.top: label.bottom
                             visible: current
@@ -206,6 +210,9 @@ Item {
                                         text:modelData.value
                                     }
                                 }
+                                Component.onCompleted:{
+                                    console.log(JSON.stringify(parameters))
+                                }
 
                             }
 
@@ -214,6 +221,7 @@ Item {
                     }
 
                 }
+
             }
         }
     }
